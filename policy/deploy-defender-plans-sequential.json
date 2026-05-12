@@ -1,0 +1,216 @@
+{
+  "properties": {
+    "displayName": "Deploy Microsoft Defender for Cloud plans sequentially (consolidated)",
+    "description": "Deploys all required Microsoft.Security/pricings plans in a single subscription-scope deployment with explicit dependsOn ordering, eliminating concurrent PUTs to the Microsoft.Security resource provider. Sentinel plan VirtualMachines is used to detect non-compliance.",
+    "policyType": "Custom",
+    "mode": "All",
+    "metadata": {
+      "version": "1.0.0",
+      "category": "Security Center"
+    },
+    "parameters": {
+      "effect": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Effect",
+          "description": "Enable or disable the execution of the policy."
+        },
+        "allowedValues": [
+          "DeployIfNotExists",
+          "Disabled"
+        ],
+        "defaultValue": "DeployIfNotExists"
+      },
+      "serversSubPlan": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Defender for Servers sub-plan",
+          "description": "Sub-plan for Defender for Servers. Common values are P1 and P2."
+        },
+        "allowedValues": [
+          "P1",
+          "P2"
+        ],
+        "defaultValue": "P2"
+      }
+    },
+    "policyRule": {
+      "if": {
+        "field": "type",
+        "equals": "Microsoft.Resources/subscriptions"
+      },
+      "then": {
+        "effect": "[parameters('effect')]",
+        "details": {
+          "type": "Microsoft.Security/pricings",
+          "name": "VirtualMachines",
+          "existenceScope": "subscription",
+          "deploymentScope": "subscription",
+          "roleDefinitionIds": [
+            "/providers/Microsoft.Authorization/roleDefinitions/fb1c8493-542b-48eb-b624-b4c8fea62acd"
+          ],
+          "existenceCondition": {
+            "field": "Microsoft.Security/pricings/pricingTier",
+            "equals": "Standard"
+          },
+          "deployment": {
+            "location": "westeurope",
+            "properties": {
+              "mode": "Incremental",
+              "parameters": {
+                "serversSubPlan": {
+                  "value": "[parameters('serversSubPlan')]"
+                }
+              },
+              "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {
+                  "serversSubPlan": {
+                    "type": "string",
+                    "defaultValue": "P2"
+                  }
+                },
+                "variables": {},
+                "resources": [
+                  {
+                    "type": "Microsoft.Security/pricings",
+                    "apiVersion": "2024-01-01",
+                    "name": "VirtualMachines",
+                    "properties": {
+                      "pricingTier": "Standard",
+                      "subPlan": "[parameters('serversSubPlan')]"
+                    }
+                  },
+                  {
+                    "type": "Microsoft.Security/pricings",
+                    "apiVersion": "2024-01-01",
+                    "name": "SqlServers",
+                    "dependsOn": [
+                      "Microsoft.Security/pricings/VirtualMachines"
+                    ],
+                    "properties": {
+                      "pricingTier": "Standard"
+                    }
+                  },
+                  {
+                    "type": "Microsoft.Security/pricings",
+                    "apiVersion": "2024-01-01",
+                    "name": "SqlServerVirtualMachines",
+                    "dependsOn": [
+                      "Microsoft.Security/pricings/SqlServers"
+                    ],
+                    "properties": {
+                      "pricingTier": "Standard"
+                    }
+                  },
+                  {
+                    "type": "Microsoft.Security/pricings",
+                    "apiVersion": "2024-01-01",
+                    "name": "StorageAccounts",
+                    "dependsOn": [
+                      "Microsoft.Security/pricings/SqlServerVirtualMachines"
+                    ],
+                    "properties": {
+                      "pricingTier": "Standard"
+                    }
+                  },
+                  {
+                    "type": "Microsoft.Security/pricings",
+                    "apiVersion": "2024-01-01",
+                    "name": "KeyVaults",
+                    "dependsOn": [
+                      "Microsoft.Security/pricings/StorageAccounts"
+                    ],
+                    "properties": {
+                      "pricingTier": "Standard"
+                    }
+                  },
+                  {
+                    "type": "Microsoft.Security/pricings",
+                    "apiVersion": "2024-01-01",
+                    "name": "AppServices",
+                    "dependsOn": [
+                      "Microsoft.Security/pricings/KeyVaults"
+                    ],
+                    "properties": {
+                      "pricingTier": "Standard"
+                    }
+                  },
+                  {
+                    "type": "Microsoft.Security/pricings",
+                    "apiVersion": "2024-01-01",
+                    "name": "Containers",
+                    "dependsOn": [
+                      "Microsoft.Security/pricings/AppServices"
+                    ],
+                    "properties": {
+                      "pricingTier": "Standard"
+                    }
+                  },
+                  {
+                    "type": "Microsoft.Security/pricings",
+                    "apiVersion": "2024-01-01",
+                    "name": "Arm",
+                    "dependsOn": [
+                      "Microsoft.Security/pricings/Containers"
+                    ],
+                    "properties": {
+                      "pricingTier": "Standard"
+                    }
+                  },
+                  {
+                    "type": "Microsoft.Security/pricings",
+                    "apiVersion": "2024-01-01",
+                    "name": "Dns",
+                    "dependsOn": [
+                      "Microsoft.Security/pricings/Arm"
+                    ],
+                    "properties": {
+                      "pricingTier": "Standard"
+                    }
+                  },
+                  {
+                    "type": "Microsoft.Security/pricings",
+                    "apiVersion": "2024-01-01",
+                    "name": "Api",
+                    "dependsOn": [
+                      "Microsoft.Security/pricings/Dns"
+                    ],
+                    "properties": {
+                      "pricingTier": "Standard",
+                      "subPlan": "P1"
+                    }
+                  },
+                  {
+                    "type": "Microsoft.Security/pricings",
+                    "apiVersion": "2024-01-01",
+                    "name": "CosmosDbs",
+                    "dependsOn": [
+                      "Microsoft.Security/pricings/Api"
+                    ],
+                    "properties": {
+                      "pricingTier": "Standard"
+                    }
+                  },
+                  {
+                    "type": "Microsoft.Security/pricings",
+                    "apiVersion": "2024-01-01",
+                    "name": "OpenSourceRelationalDatabases",
+                    "dependsOn": [
+                      "Microsoft.Security/pricings/CosmosDbs"
+                    ],
+                    "properties": {
+                      "pricingTier": "Standard"
+                    }
+                  }
+                ],
+                "outputs": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
