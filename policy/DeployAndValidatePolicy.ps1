@@ -1,5 +1,4 @@
-# Subscription ID = 74f7fd0f-5456-4985-b3ef-4f3c5aaf7a4f
-$subId = "b0dfd5b3-9f3c-4fb5-ae5e-0e7f81eab970"
+$subId = "subscription-id-here"
 
 # 1. Create + assign
 $def = New-AzPolicyDefinition -Name 'deploy-defender-seq' `
